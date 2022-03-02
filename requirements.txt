@@ -2,7 +2,7 @@ anyio==3.5.0
 asgiref==3.5.0
 click==8.0.4
 colorama==0.4.4
-decouple==0.0.7
+python-decouple
 fastapi==0.74.1
 h11==0.13.0
 idna==3.3
