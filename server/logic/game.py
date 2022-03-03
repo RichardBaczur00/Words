@@ -20,20 +20,22 @@ class Game:
         self.terminated = False
         self.last_update = None
 
-    def last_update_factory(self, code: int):
-        def last_update(fn):
-            def inner(*args, **kwargs):
-                self.last_update = code
-                fn(*args, **kwargs)
+    # def last_update_factory(code: int):
+    #     def last_update(fn):
+    #         def inner(self, *args, **kwargs):
+    #             self.last_update = code
+    #             fn(*args, **kwargs)
 
-    @last_update_factory(0x02)
+    # @last_update_factory(0x02)
     def start_game(self, words):
+        self.last_update = 0x02
         self.started = True
         self.word = self.choose_word(words)
         self.set_update()
 
-    @last_update_factory(0x04)
+    # @last_update_factory(0x04)
     def player_join(self, player):
+        self.last_update = 0x04
         self.players.append(player)
         self.to_update[player] = 0
 
@@ -43,6 +45,7 @@ class Game:
 
         self.lives -= 1
         self.current_player = (self.current_player + 1) % len(self.players)
+        self.set_update()
 
         return self.check_word(move)
     
@@ -52,8 +55,9 @@ class Game:
     def validate_input(self, player, words):
         return False if len(player) != 5 else words.word.str.contains(player).any()
 
-    @last_update_factory(0x01)
+    # @last_update_factory(0x01)
     def check_word(self, player) -> list:
+        self.last_update = 0x01
         if player == self.word:
             self.score += 1
             return [1 for i in range(5)]
@@ -81,8 +85,9 @@ class Game:
             'status_code': 0x00
         }
             
-    @last_update_factory(0x08)
+    # @last_update_factory(0x08)
     def end_game(self):
+        self.last_update = 0x08
         self.terminated = True
         self.set_update()
     

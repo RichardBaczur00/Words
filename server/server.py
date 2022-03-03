@@ -44,7 +44,7 @@ async def refresh(request: Request, refresh_data: JoinGameModel):
         checking for changes, server will responde with any changes).
         This is only available if the player is in a game.
 
-        Return codes:
+        Return codes (stored with `status_code` as key):
         1. No updates    (0x00)
         2. New guess     (0x01)
         3. Game start    (0x02)
@@ -94,7 +94,7 @@ async def end_game(request: Request, end: GameStartModel):
         raise HTTPException(status_code=417, detail='Failed to end game!')
     else:
         return JSONResponse(content = {
-            'game': 
+            'game': games[end.game_id].to_dict()
         })
 
 
@@ -133,5 +133,31 @@ async def start_game(request: Request, start: GameStartModel):
 async def make_move(request: Request, move: MoveModel):
     '''
         Endpoint that makes a move in a game.
+
+        Return codes (stored with `status_code` as key):
+        1. Valid Move     (0x00)
+        2. Invalid Move   (0x01)
+        3. Invalid Player (0x02)
     '''
-    pass
+    try:
+        move_status = games[move.game_id].make_move(move.player_word, word_dataset) \
+            if games[move.game_id].players[games[move.game_id].current_player] == move.user_id else None
+    
+        if move_status is None:
+            return JSONResponse(content = {
+                'status_code': 0x01
+            })
+
+        if move_status == -1:
+            return JSONResponse(content = {
+                'status_code': 0x02
+            })
+
+        return JSONResponse(content = {
+            'status_code': 0x00,
+            'game': games[move.game_id].to_dict()
+        })
+        
+    except:
+        raise HTTPException(status_code=417, detail='Failed to make move!')
+
