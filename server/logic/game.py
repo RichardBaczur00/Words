@@ -1,6 +1,8 @@
 import random
 import json
 
+from pydantic.types import Dict
+
 class Game:
 
     def __init__(self, owner_id):
@@ -16,12 +18,21 @@ class Game:
         self.current_player = 0
         self.started = False
         self.terminated = False
+        self.last_update = None
 
+    def last_update_factory(self, code: int):
+        def last_update(fn):
+            def inner(*args, **kwargs):
+                self.last_update = code
+                fn(*args, **kwargs)
+
+    @last_update_factory(0x02)
     def start_game(self, words):
         self.started = True
         self.word = self.choose_word(words)
         self.set_update()
 
+    @last_update_factory(0x04)
     def player_join(self, player):
         self.players.append(player)
         self.to_update[player] = 0
@@ -41,6 +52,7 @@ class Game:
     def validate_input(self, player, words):
         return False if len(player) != 5 else words.word.str.contains(player).any()
 
+    @last_update_factory(0x01)
     def check_word(self, player) -> list:
         if player == self.word:
             self.score += 1
@@ -55,6 +67,21 @@ class Game:
             key: 1 for key in self.players
         }
 
+    def switch_update(self, user_id):
+        if self.to_update[user_id]:
+            self.to_update[user_id] = 0
+            return True
+        return False
+
+    def check_updates(self, user_id) -> Dict:
+        return {
+            'game': self.to_dict(),
+            'status_code': self.last_update
+        } if self.switch_update(user_id) else {
+            'status_code': 0x00
+        }
+            
+    @last_update_factory(0x08)
     def end_game(self):
         self.terminated = True
         self.set_update()

@@ -38,13 +38,21 @@ word_dataset = read_dataset()
 
 
 @app.get('/', tags=['Gameplay'], dependencies=[Depends(JWTBearer())], response_class=JSONResponse)
-async def refresh(request: Request):
+async def refresh(request: Request, refresh_data: JoinGameModel):
     '''
         Endpoint used to get updates (each player involved in a game will send a request to this endpoint
         checking for changes, server will responde with any changes).
         This is only available if the player is in a game.
+
+        Return codes:
+        1. No updates    (0x00)
+        2. New guess     (0x01)
+        3. Game start    (0x02)
+        4. Player joined (0x04)
+        5. Game ended    (0x08)
     '''
-    pass
+    content = games[refresh_data.game_id].check_updates(refresh_data.user_id)
+    return JSONResponse(content=content)
 
 
 @app.get('/word', tags=['Gameplay'], dependencies=[Depends(JWTBearer())], response_class=JSONResponse)
@@ -80,7 +88,14 @@ async def end_game(request: Request, end: GameStartModel):
         Endpoint will delete a game from the server.
         This will be called whenever a game ends or is terminated manually.
     '''
-    pass
+    try:
+        games[end.game_id].end_game()
+    except:
+        raise HTTPException(status_code=417, detail='Failed to end game!')
+    else:
+        return JSONResponse(content = {
+            'game': 
+        })
 
 
 @app.post('/game/join', response_class=JSONResponse, response_model=GameDataModel, tags=['Gameplay'])
