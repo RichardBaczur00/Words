@@ -2,6 +2,7 @@ import json
 import uuid
 import pandas as pd
 
+from re import A
 from pathlib import Path
 
 from typing import Optional
@@ -31,6 +32,7 @@ from auth.auth_handler import signJWT
 
 
 app = FastAPI()
+app.type = '00' # save global variables
 
 games: Dict[str, Game] = dict()
 
@@ -54,6 +56,20 @@ async def refresh(request: Request, refresh_data: JoinGameModel):
     content = games[refresh_data.game_id].check_updates(refresh_data.user_id)
     return JSONResponse(content=content)
 
+@app.get('/id', tags=['Utility', 'Identification'], response_class=JSONResponse, response_model=UserModel)
+async def get_id(request: Request) -> UserModel:
+    '''
+        Endpoint used to get a user_id (this is done for guests, right now it is being done 
+        for all players, but later, only guests will need to access this method).
+
+        Getting such an id will block might block a couple features. Need to see 
+        how to use jwt to do this. Maybe generate a key with a different format for this kind 
+        of player.
+    '''
+    return JSONResponse(content = {
+        'user_id': str(uuid.uuid4())
+    })
+
 
 @app.get('/word', tags=['Gameplay'], dependencies=[Depends(JWTBearer())], response_class=JSONResponse)
 def get_word(request: Request):
@@ -75,9 +91,10 @@ async def create_game(request: Request, user: UserModel):
     game_id = uuid.uuid4()
     user_id = user.user_id
     game = Game(user_id)
-    games[game_id] = game
+    games[str(game_id)] = game
     return JSONResponse(content = {
-        'game': games[game_id].to_dict(),
+        'game': games[str(game_id)].to_dict(),
+        'game_id': str(game_id),
         'game_token': signJWT(user_id, game_id)
     })
 
@@ -106,7 +123,7 @@ async def join_game(request: Request, join_game: JoinGameModel):
     try:
         games[join_game.game_id].player_join(join_game.user_id)
     except:
-        return HTTPException(status_code=417, detail='Failed to join game!')
+        raise HTTPException(status_code=417, detail='Failed to join game!')
     else:
         return JSONResponse(content = {
             'game': games[join_game.game_id].to_dict(),
@@ -119,10 +136,13 @@ async def start_game(request: Request, start: GameStartModel):
     '''
         Endpoint will start a game (initialize the game after all users joined)
     '''
+    global games
     try:
+        print(games)
         games[start.game_id].start_game(word_dataset)
-    except:
-        return HTTPException(status_code=417, detail='Failed to start game!')
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=417, detail='Failed to start game!')
     else:
         return JSONResponse(content = {
             'game': games[start.game_id].to_dict()

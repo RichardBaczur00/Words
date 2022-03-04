@@ -1,5 +1,6 @@
 import random
 import json
+from tkinter import E
 
 from pydantic.types import Dict
 
@@ -8,9 +9,9 @@ class Game:
     def __init__(self, owner_id):
         self.score = 0
         self.lives = 6
-        self.owner = owner_id
+        self.owner = str(owner_id)
         self.players = []
-        self.guesses = []
+        self.guesses = dict()
         self.players.append(owner_id)
         self.to_update = {
             key: 0 for key in self.players
@@ -28,16 +29,22 @@ class Game:
 
     # @last_update_factory(0x02)
     def start_game(self, words):
-        self.last_update = 0x02
-        self.started = True
-        self.word = self.choose_word(words)
-        self.set_update()
+        try:
+            self.last_update = 0x02
+            self.started = True
+            self.word = self.choose_word(words)
+            self.set_update()
+            self.to_update[self.owner] = []
+        except Exception as e:
+            print(e)
+            raise e
 
     # @last_update_factory(0x04)
     def player_join(self, player):
         self.last_update = 0x04
-        self.players.append(player)
-        self.to_update[player] = 0
+        self.players.append(str(player))
+        self.set_update()
+        self.to_update[str(player)] = 0
 
     def make_move(self, move, words):
         if not self.validate_input(move, words):
@@ -62,9 +69,9 @@ class Game:
             self.score += 1
             return [1 for i in range(5)]
 
-        self.guesses.append(player)
+        self.guesses[player] = [1 if player[i] == self.word[i] else 0.5 if player[i] in self.word else 0 for i in range(5)]
 
-        return [1 if player[i] == self.word[i] else 0.5 if player[i] in self.word else 0 for i in range(5)]
+        return self.guesses[player]
 
     def set_update(self):
         self.to_update = {
@@ -120,5 +127,7 @@ class Game:
             'guesses': self.guesses,
             'terminated': self.terminated
         }
+
+        if self.last_update == 0x08: data['word'] = self.word
 
         return data
