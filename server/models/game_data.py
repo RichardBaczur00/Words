@@ -1,9 +1,11 @@
 from pydantic import BaseModel
+from pydantic.typing import Dict
 
-from typing import Optional
+from typing import Any, Optional
 
 
 class GameDataModel(BaseModel):
+    game: Dict[str, Any]
     game_id: str
-    lives: int
-    score: int
+    game_token: str    
+

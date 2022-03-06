@@ -15,8 +15,8 @@ def token_response(token: str) -> Dict[str, str]:
 
 def signJWT(user_id: str, game_id: str) -> Dict[str, str]:
     payload = {
-        'user_id': user_id,
-        'game_id': game_id,
+        'user_id': str(user_id),
+        'game_id': str(game_id),
         'role': 'player',
         'expires': time.time() + 600
     }
