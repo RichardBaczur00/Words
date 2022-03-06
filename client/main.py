@@ -83,6 +83,11 @@ def start_game_menu(game_token, game_id, player_id):
         else:
             print(data['game']['guesses'][word])
 
+        if data['game']['terminated'] and data['game']['lives'] > 0:
+            print('Success')
+        elif data['game']['terminated']:
+            print('Fail')
+
 
 
 def main():

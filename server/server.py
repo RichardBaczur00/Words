@@ -34,7 +34,7 @@ from auth.auth_handler import signJWT
 app = FastAPI()
 app.type = '00' # save global variables
 
-games: Dict[str, Game] = dict()
+app.games: Dict[str, Game] = dict()
 
 word_dataset = read_dataset()
 
@@ -53,7 +53,7 @@ async def refresh(request: Request, refresh_data: JoinGameModel):
         4. Player joined (0x04)
         5. Game ended    (0x08)
     '''
-    content = games[refresh_data.game_id].check_updates(refresh_data.user_id)
+    content = app.games[refresh_data.game_id].check_updates(refresh_data.user_id)
     return JSONResponse(content=content)
 
 @app.get('/id', tags=['Utility', 'Identification'], response_class=JSONResponse, response_model=UserModel)
@@ -91,9 +91,9 @@ async def create_game(request: Request, user: UserModel):
     game_id = uuid.uuid4()
     user_id = user.user_id
     game = Game(user_id)
-    games[str(game_id)] = game
+    app.games[str(game_id)] = game
     return JSONResponse(content = {
-        'game': games[str(game_id)].to_dict(),
+        'game': app.games[str(game_id)].to_dict(),
         'game_id': str(game_id),
         'game_token': signJWT(user_id, game_id)
     })
@@ -106,12 +106,12 @@ async def end_game(request: Request, end: GameStartModel):
         This will be called whenever a game ends or is terminated manually.
     '''
     try:
-        games[end.game_id].end_game()
+        app.games[end.game_id].end_game()
     except:
         raise HTTPException(status_code=417, detail='Failed to end game!')
     else:
         return JSONResponse(content = {
-            'game': games[end.game_id].to_dict()
+            'game': app.games[end.game_id].to_dict()
         })
 
 
@@ -121,12 +121,12 @@ async def join_game(request: Request, join_game: JoinGameModel):
         Endpoint will attempt to join a user to an existing game
     '''
     try:
-        games[join_game.game_id].player_join(join_game.user_id)
+        app.games[join_game.game_id].player_join(join_game.user_id)
     except:
         raise HTTPException(status_code=417, detail='Failed to join game!')
     else:
         return JSONResponse(content = {
-            'game': games[join_game.game_id].to_dict(),
+            'game': app.games[join_game.game_id].to_dict(),
             'game_token': signJWT(join_game.user_id, join_game.game_id)
         })
 
@@ -136,16 +136,15 @@ async def start_game(request: Request, start: GameStartModel):
     '''
         Endpoint will start a game (initialize the game after all users joined)
     '''
-    global games
     try:
-        print(games)
-        games[start.game_id].start_game(word_dataset)
+        print(app.games)
+        app.games[start.game_id].start_game(word_dataset)
     except Exception as e:
         print(e)
         raise HTTPException(status_code=417, detail='Failed to start game!')
     else:
         return JSONResponse(content = {
-            'game': games[start.game_id].to_dict()
+            'game': app.games[start.game_id].to_dict()
         })
 
 
@@ -159,9 +158,10 @@ async def make_move(request: Request, move: MoveModel):
         2. Invalid Move   (0x01)
         3. Invalid Player (0x02)
     '''
+    print(app.games)
     try:
-        move_status = games[move.game_id].make_move(move.player_word, word_dataset) \
-            if games[move.game_id].players[games[move.game_id].current_player] == move.user_id else None
+        move_status = app.games[move.game_id].make_move(move.player_word, word_dataset) \
+            if app.games[move.game_id].players[app.games[move.game_id].current_player] == move.user_id else None
     
         if move_status is None:
             return JSONResponse(content = {
@@ -175,9 +175,10 @@ async def make_move(request: Request, move: MoveModel):
 
         return JSONResponse(content = {
             'status_code': 0x00,
-            'game': games[move.game_id].to_dict()
+            'game': app.games[move.game_id].to_dict()
         })
         
-    except:
+    except Exception as e:
+        print(e.with_traceback())
         raise HTTPException(status_code=417, detail='Failed to make move!')
 

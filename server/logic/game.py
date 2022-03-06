@@ -32,7 +32,8 @@ class Game:
         try:
             self.last_update = 0x02
             self.started = True
-            self.word = self.choose_word(words)
+            self.word = self.choose_word(words)[0]
+            print(self.word)
             self.set_update()
             self.to_update[self.owner] = []
         except Exception as e:
@@ -67,6 +68,8 @@ class Game:
         self.last_update = 0x01
         if player == self.word:
             self.score += 1
+            self.guesses[player] = [1 for i in range(5)]
+            self.end_game()
             return [1 for i in range(5)]
 
         self.guesses[player] = [1 if player[i] == self.word[i] else 0.5 if player[i] in self.word else 0 for i in range(5)]

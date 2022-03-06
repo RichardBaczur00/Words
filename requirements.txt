@@ -4,10 +4,6 @@ certifi==2021.10.8
 charset-normalizer==2.0.12
 click==8.0.4
 colorama==0.4.4
-<<<<<<< HEAD
-python-decouple
-=======
->>>>>>> 1efb882339a960fa80e5c4a12e106c95a909ac42
 fastapi==0.74.1
 h11==0.13.0
 idna==3.3
