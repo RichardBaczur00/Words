@@ -28,11 +28,11 @@ class Game:
     #             fn(*args, **kwargs)
 
     # @last_update_factory(0x02)
-    def start_game(self, words):
+    def start_game(self, words, word=None):
         try:
             self.last_update = 0x02
             self.started = True
-            self.word = self.choose_word(words)[0]
+            self.word = word or self.choose_word(words)[0]
             print(self.word)
             self.set_update()
             self.to_update[self.owner] = []
@@ -71,6 +71,8 @@ class Game:
             self.guesses[player] = [1 for i in range(5)]
             self.end_game()
             return [1 for i in range(5)]
+
+        tmp_word = self.word
 
         self.guesses[player] = [1 if player[i] == self.word[i] else 0.5 if player[i] in self.word else 0 for i in range(5)]
 
