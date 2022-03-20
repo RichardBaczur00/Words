@@ -175,7 +175,7 @@ async def make_move(request: Request, move: MoveModel):
 
         return JSONResponse(content = {
             'status_code': 0x00,
-            'game': app.games[move.game_id].to_dict()
+            'game': app.games[move.game_id].to_dict()['guesses'][move.player_word]
         })
         
     except Exception as e:

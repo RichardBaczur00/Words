@@ -1,6 +1,5 @@
 import random
 import json
-from tkinter import E
 
 from pydantic.types import Dict
 

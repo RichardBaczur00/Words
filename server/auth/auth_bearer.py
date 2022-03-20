@@ -10,6 +10,7 @@ class JWTBearer(HTTPBearer):
 
     async def __call__(self, request: Request):
         credentials: HTTPAuthorizationCredentials = await super(JWTBearer, self).__call__(request)
+        print(request)
         if credentials:
             if not credentials.scheme == 'Bearer':
                 print(credentials.credentials)
@@ -24,7 +25,7 @@ class JWTBearer(HTTPBearer):
     def verify_jwt(self, jwttoken: str) -> bool:
         try:
             payload = decodeJWT(jwttoken)
+            print('payload', payload)
+            return bool(payload)
         except:
             return False
-        finally:
-            return bool(payload)
