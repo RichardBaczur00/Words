@@ -25,10 +25,13 @@ from models.move import MoveModel
 from models.user import UserModel
 from models.game_join import JoinGameModel
 from models.game_start import GameStartModel
+from models.save_stats import StatSaveModel
 
 from utils.utils import read_dataset, choose_word
 
 from auth.auth_handler import signJWT
+
+import db.db_ops as db
 
 
 app = FastAPI()
@@ -81,6 +84,24 @@ def get_word(request: Request):
         'word': choose_word(word_dataset)
     }
     return JSONResponse(content=ret)
+
+@app.get('/stats', tags=['Statistics'], dependencies=[Depends(JWTBearer())], response_class=JSONResponse)
+def get_statistics(request: Request, user: UserModel):
+    '''
+        Endpoint that gets stats.
+    '''
+    id = user.user_id
+    return JSONResponse(content = {
+        'stats': db.get_stats(id)
+    })
+
+
+@app.post('/stats', tags=['Statistics'], dependencies=[Depends(JWTBearer())], response_class=JSONResponse)
+def save_stats(request: Request, stat: StatSaveModel):
+    '''
+        Endpoint that updates stats.
+    '''
+    db.save_stats(stat.user_id, stat.winner, stat.attempts)
 
 
 @app.post('/game/create', response_class=JSONResponse, response_model=GameDataModel, tags=['Gameplay'])
