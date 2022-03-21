@@ -1,12 +1,23 @@
+import os
 import pymongo
 
 from decouple import config
+from pathlib import Path
+
 
 DB_NAME = config('dbName')
 DB_PASS = config('dbPass')
 
-client = pymongo.MongoClient("mongodb+srv://app:{DB_PASS}@cluster0.9gl06.mongodb.net/{DB_NAME}?retryWrites=true&w=majority")
-db = client.WordsDB
+def db_connect():
+    cert_path = Path(os.path.dirname(os.path.abspath(__file__)))
+    uri = "mongodb+srv://cluster0.9gl06.mongodb.net/myFirstDatabase?authSource=%24external&authMechanism=MONGODB-X509&retryWrites=true&w=majority"
+    client = pymongo.MongoClient(uri,
+                     tls=True,
+                     tlsCertificateKeyFile=str(cert_path) + '.\\X509-cert-651724852041796075.pem')
+    return client['WordsDB']
+
+db = db_connect()
+
 
 def save_stats(user_id: str, winner: bool, attempts: int = None) -> None:
     if winner and not attempts:
@@ -22,7 +33,7 @@ def save_stats(user_id: str, winner: bool, attempts: int = None) -> None:
                 'user_id': user_id
             }, update = {
                 '$inc': {
-                    attempts: 1,
+                    f'attempts.$.{attempts}': 1,
                     'games': 1,
                     'wins': 1
                 }
@@ -30,7 +41,7 @@ def save_stats(user_id: str, winner: bool, attempts: int = None) -> None:
         else:
             db.stats.insert_one(document={
                 'user_id': user_id,
-                'attempts': { key: value for key, value in zip(range(-1, 7), [ 0 if attempts != i else 1 for i in range(7) ] ) },
+                'attempts': { str(key): value for key, value in zip(range(-1, 7), [ 0 if attempts != i else 1 for i in range(-1, 7) ] ) },
                 'games': 1,
                 'wins': 1
             })
@@ -45,14 +56,13 @@ def save_stats(user_id: str, winner: bool, attempts: int = None) -> None:
                 'user_id': user_id
             }, update = {
                 '$inc': {
-                    attempts: 1,
                     'games': 1,
                 }
             })
         else:
             db.stats.insert_one(document={
                 'user_id': user_id,
-                'attempts': { key: value for key, value in zip(range(-1, 7), [ 0 for i in range(7) ] ) },
+                'attempts': { str(key): value for key, value in zip(range(-1, 8), [ 0 for i in range(-1, 7) ] ) },
                 'games': 1,
                 'wins': 0
             })
