@@ -14,10 +14,10 @@ def save_stats(user_id: str, winner: bool, attempts: int = None) -> None:
         return
     if winner:
         # save to db
-        stats = db.get_collection('stats').find(filter={
+        stats = db.get_collection('stats').find_one(filter={
             'user_id': user_id
         })
-        if stats.count() != 0:
+        if stats is not None:
             db.get_collection('stats').update_one(filter={
                 'user_id': user_id
             }, update = {
@@ -30,17 +30,17 @@ def save_stats(user_id: str, winner: bool, attempts: int = None) -> None:
         else:
             db.stats.insert_one(document={
                 'user_id': user_id,
-                'attempts': { key: value for key, value in zip(range(-1, 7), [ 0 for i in range(7) if attempts != i else 1 ] ) }
+                'attempts': { key: value for key, value in zip(range(-1, 7), [ 0 if attempts != i else 1 for i in range(7) ] ) },
                 'games': 1,
                 'wins': 1
             })
     else:
         attempts = -1
         #save to db
-        stats = db.get_collection('stats').find(filter={
+        stats = db.get_collection('stats').find_one(filter={
             'user_id': user_id
         })
-        if stats.count() != 0:
+        if stats is not None:
             db.get_collection('stats').update_one(filter={
                 'user_id': user_id
             }, update = {
@@ -52,7 +52,7 @@ def save_stats(user_id: str, winner: bool, attempts: int = None) -> None:
         else:
             db.stats.insert_one(document={
                 'user_id': user_id,
-                'attempts': { key: value for key, value in zip(range(-1, 7), [ 0 for i in range(7) if attempts != i else 1 ] ) }
+                'attempts': { key: value for key, value in zip(range(-1, 7), [ 0 for i in range(7) ] ) },
                 'games': 1,
                 'wins': 0
             })
