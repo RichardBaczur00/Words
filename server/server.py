@@ -85,12 +85,12 @@ def get_word(request: Request):
     }
     return JSONResponse(content=ret)
 
-@app.get('/stats', tags=['Statistics'], dependencies=[Depends(JWTBearer())], response_class=JSONResponse)
-def get_statistics(request: Request, user: UserModel):
+@app.get('/stats/{user_id}', tags=['Statistics'], dependencies=[Depends(JWTBearer())], response_class=JSONResponse)
+def get_statistics(request: Request, user_id: str):
     '''
         Endpoint that gets stats.
     '''
-    id = user.user_id
+    id = user_id
     return JSONResponse(content = {
         'stats': db.get_stats(id)
     })

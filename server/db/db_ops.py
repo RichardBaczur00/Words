@@ -33,7 +33,7 @@ def save_stats(user_id: str, winner: bool, attempts: int = None) -> None:
                 'user_id': user_id
             }, update = {
                 '$inc': {
-                    f'attempts.$.{attempts}': 1,
+                    f'attempts.{attempts}': 1,
                     'games': 1,
                     'wins': 1
                 }
@@ -75,6 +75,6 @@ def get_stats(user_id: str) -> dict:
     })
     print(stats)
     for stat in stats:
-        return stat # lol
+        return {key: value for key, value in stat.items() if key != '_id'} # lol
     
 
