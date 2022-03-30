@@ -109,5 +109,5 @@ def register_user(username: str, password: str) -> bool:
 def can_play(uid: str) -> bool:
     return not db.get_collection('users').find_one(filter = {
         'user_id': uid
-    })['playedToday']
+    })['played_today']
 
