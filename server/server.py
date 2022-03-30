@@ -5,7 +5,7 @@ import pandas as pd
 from re import A
 from pathlib import Path
 
-from typing import Optional
+from typing import Optional, Any
 from typing_extensions import final
 
 from fastapi import FastAPI, Request, Cookie, HTTPException, Depends
@@ -26,6 +26,8 @@ from models.user import UserModel
 from models.game_join import JoinGameModel
 from models.game_start import GameStartModel
 from models.save_stats import StatSaveModel
+from models.login_model import LoginModel
+from models.register_model import RegisterModel
 
 from utils.utils import read_dataset, choose_word
 
@@ -37,7 +39,7 @@ import db.db_ops as db
 app = FastAPI()
 app.type = '00' # save global variables
 
-app.games: Dict[str, Game] = dict()
+app.games = dict()
 
 word_dataset = read_dataset()
 
@@ -71,6 +73,28 @@ async def get_id(request: Request) -> UserModel:
     '''
     return JSONResponse(content = {
         'user_id': str(uuid.uuid4())
+    })
+
+
+@app.post('/login', tags=['Users', 'Identification'], response_class=JSONResponse, response_model=UserModel)
+def login(request: Request, user: LoginModel):
+    '''
+        Endpoint used for login. This will only return the id of the user.
+    '''
+    status = db.login_user(user.username, user.password)
+    return JSONResponse(content = {
+        'user_id': status if status is not None else 'fail'
+    })
+
+
+@app.post('/register', tags=['Users', 'Identification'], response_class=JSONResponse, response_model=UserModel)
+def register(request: Request, user: RegisterModel):
+    '''
+        Endpoint used for registration. This will only return the id of the user.
+    '''
+    status = db.register_user(user.username, user.password)
+    return JSONResponse(content = {
+        'user_id': status
     })
 
 
@@ -111,6 +135,12 @@ async def create_game(request: Request, user: UserModel):
     '''
     game_id = uuid.uuid4()
     user_id = user.user_id
+
+    if not db.can_play(user_id):
+        return JSONResponse(content = {
+            'message': 'User already played today!'
+        })
+
     game = Game(user_id)
     app.games[str(game_id)] = game
     return JSONResponse(content = {
@@ -181,6 +211,12 @@ async def make_move(request: Request, move: MoveModel):
     '''
     print(app.games)
     try:
+        if app.games[move.game_id].terminated:
+            return JSONResponse(content = {
+                'status_code': 0x04,
+                'word': app.games[move.game_id].word
+            })
+
         move_status = app.games[move.game_id].make_move(move.player_word, word_dataset) \
             if app.games[move.game_id].players[app.games[move.game_id].current_player] == move.user_id else None
     
